@@ -236,6 +236,21 @@ export class MoolreService {
     }
   }
 
+  private normalizeSmsRecipient(to: string) {
+    const digits = to.replace(/[^\d]/g, '')
+    if (!digits) return ''
+    if (digits.startsWith('2330') && digits.length === 13) {
+      return `233${digits.slice(4)}`
+    }
+    if (digits.startsWith('0') && digits.length === 10) {
+      return `233${digits.slice(1)}`
+    }
+    if (digits.length === 9) {
+      return `233${digits}`
+    }
+    return digits
+  }
+
   async sendSms(params: { to?: string | null; message: string }) {
     if (!params.to) return { success: false, skipped: true, error: 'Missing phone number' }
     if (process.env.MOOLRE_SMS_ENABLED === 'false') {
@@ -245,7 +260,10 @@ export class MoolreService {
     if (!this.vasKey) return { success: false, skipped: true, error: 'Missing Moolre VAS key' }
 
     try {
-      const recipient = params.to.replace(/[^\d]/g, '')
+      const recipient = this.normalizeSmsRecipient(params.to)
+      if (!recipient) {
+        return { success: false, error: 'Invalid recipient phone number' }
+      }
       const res = await fetch(`${MOOLRE_BASE}/open/sms/send`, {
         method: 'POST',
         headers: this.smsHeaders(),
@@ -261,13 +279,51 @@ export class MoolreService {
         }),
       })
       const raw = await res.json().catch(() => null)
-      if (!res.ok || raw?.status === 0) {
+      const success = raw?.status === 1
+      if (!res.ok || !success) {
         console.error('[Moolre] sendSms failed:', JSON.stringify(raw))
       }
-      return { success: Boolean(raw?.status === 1), raw }
+      return {
+        success,
+        raw,
+        error: success ? undefined : raw?.message || raw?.code || 'SMS send failed',
+      }
     } catch (err) {
       console.error('[Moolre] sendSms error:', err)
       return { success: false, error: err instanceof Error ? err.message : 'SMS failed' }
+    }
+  }
+
+  async checkSmsBalance() {
+    if (process.env.MOOLRE_SMS_ENABLED === 'false') {
+      return { success: true, balance: Number.POSITIVE_INFINITY }
+    }
+    if (!this.vasKey) {
+      return { success: false, error: 'Missing Moolre VAS key' }
+    }
+
+    try {
+      const res = await fetch(`${MOOLRE_BASE}/open/sms/status`, {
+        method: 'POST',
+        headers: this.smsHeaders(),
+        body: JSON.stringify({ type: 2 }),
+      })
+      const raw = await res.json().catch(() => null)
+      if (!res.ok || raw?.status !== 1) {
+        console.error('[Moolre] checkSmsBalance failed:', JSON.stringify(raw))
+        this.logMissingCredentials('checkSmsBalance')
+        return {
+          success: false,
+          raw,
+          error: raw?.message || raw?.code || 'SMS balance check failed',
+        }
+      }
+
+      const balance = Number(raw.data?.balance ?? 0)
+      return { success: true, balance, raw }
+    } catch (err) {
+      console.error('[Moolre] checkSmsBalance error:', err)
+      return { success: false, error: err instanceof Error ? err.message : 'SMS balance check failed' }
     }
   }
 

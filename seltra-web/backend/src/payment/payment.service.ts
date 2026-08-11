@@ -1354,13 +1354,27 @@ async handleMoolreWebhook(body: MoolreWebhookBody) {
       },
     })
 
+    const smsBalance = await this.moolreService.checkSmsBalance()
+    if (!smsBalance.success) {
+      await prisma.disbursement.delete({ where: { id: disbursement.id } }).catch(() => null)
+      throw new BadRequestException(`Could not verify SMS bundle balance: ${smsBalance.error}`)
+    }
+    if ((smsBalance.balance ?? 0) <= 0) {
+      await prisma.disbursement.delete({ where: { id: disbursement.id } }).catch(() => null)
+      throw new BadRequestException('SMS bundle balance is insufficient to send disbursement OTP. Top up SMS credits in the Moolre dashboard SMS section.')
+    }
+
     const otpSms = await this.moolreService.sendSms({
       to: merchantPhone,
       message: `Seltra payout OTP: ${otp}. Confirm ${ledger.currency} ${requestedAmount.toFixed(2)} to ${tenant.payoutAccountName || tenant.payoutProvider || 'your payout account'}. Expires in 10 minutes.`,
     })
     if (!otpSms.success) {
       await prisma.disbursement.delete({ where: { id: disbursement.id } }).catch(() => null)
-      throw new BadRequestException('Could not send disbursement OTP to merchant phone')
+      throw new BadRequestException(
+        otpSms.error
+          ? `Could not send disbursement OTP: ${otpSms.error}`
+          : 'Could not send disbursement OTP to merchant phone',
+      )
     }
     void this.tenantEvents.recordForTenant(resolvedTenantId, 'disbursement_requested', {
       disbursementId: disbursement.id,
@@ -1598,6 +1612,12 @@ async handleMoolreWebhook(body: MoolreWebhookBody) {
     void this.moolreService.sendSms({
       to: this.merchantPhoneFromTenant(disbursement.tenant),
       message: `Seltra payout sent: ${disbursement.currency} ${amount.toFixed(2)} to ${disbursement.provider || 'your payout account'}.`,
+    }).then((sms) => {
+      if (!sms.success) {
+        console.error('[Payment] payout confirmation SMS failed:', sms.error, sms.raw)
+      }
+    }).catch((err) => {
+      console.error('[Payment] payout confirmation SMS error:', err)
     })
 
     return { success: true, transaction: tx, disbursementId: disbursement.id, testMode }
