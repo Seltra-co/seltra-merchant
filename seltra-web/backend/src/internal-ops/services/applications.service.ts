@@ -1,3 +1,4 @@
+//services/applications.service.ts
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common'
 import { MerchantStatus, Prisma } from '@prisma/client'
 import * as bcrypt from 'bcryptjs'
@@ -16,6 +17,7 @@ export class ApplicationsService {
     private readonly tenantEvents: TenantEventsService,
   ) {}
 
+  //List applications with optional filtering and pagination
   async list(query: ApplicationsQueryDto) {
     const where: Prisma.MerchantApplicationWhereInput = {
       ...(query.status ? { status: query.status } : {}),
@@ -71,6 +73,7 @@ export class ApplicationsService {
   //   }
   // }
 
+  //Approve an application, create a user, generate a merchant ID, and send credentials
   async approve(id: string) {
   const application = await prisma.merchantApplication.findUnique({
     where: { id },
@@ -171,6 +174,7 @@ export class ApplicationsService {
   }
 }
 
+//Reject an application with a reason
   async reject(id: string, reason: string) {
     const application = await prisma.merchantApplication.findUnique({ where: { id } })
     if (!application) throw new NotFoundException('Application not found')
@@ -188,7 +192,7 @@ export class ApplicationsService {
 
 
  
-
+//Helper function to generate a unique merchant ID
 private async generateMerchantId(tx: PrismaClient | any): Promise<string> {
   while (true) {
     const left = Math.floor(1000 + Math.random() * 9000)

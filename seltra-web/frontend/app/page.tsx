@@ -89,22 +89,25 @@ const logos: BrandLogo[] = [
 
 const showcaseStores = [
   {
-    name: 'Lumen Skincare',
-    category: 'Beauty - Accra',
-    desc: 'Gen Z skincare brand. Built in 4 minutes.',
-    image: '/seltra/store-lumen.jpg',
+    name: 'Dwomohs',
+    category: 'Footwear - Traditional',
+    desc: 'Handcrafted Ghanaian sandals with a heritage-first storefront.',
+    image: '/seltra/store-dwomohs.png',
+    url: 'https://dwomohs-vogue.seltra.co/',
   },
   {
-    name: 'Fashionbrand',
-    category: 'Apparel - Drops',
-    desc: 'Bold streetwear drops with a cinematic storefront.',
-    image: '/seltra/store-fashionbrand.jpg',
+    name: 'Trendy Wear',
+    category: 'Apparel - Fashion',
+    desc: 'Streetedge fashion with everyday versatility, live in minutes.',
+    image: '/seltra/store-trendywear.png',
+    url: 'https://fast-fashion-retail-store.seltra.co/',
   },
   {
-    name: 'Handmade Jewels',
-    category: 'Jewelry - Editorial',
-    desc: 'Handmade necklaces, earrings and rings. Editorial feel.',
-    image: '/seltra/store-handmade.jpg',
+    name: 'TechHub',
+    category: 'Electronics - Gadgets',
+    desc: 'Smartphones, laptops, and accessories, thoughtfully catalogued.',
+    image: '/seltra/store-techhub.png',
+    url: 'https://premium-modern-technology-store.seltra.co/',
   },
 ]
 
@@ -559,13 +562,28 @@ function Showcase() {
 
         <div className="grid gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
           {showcaseStores.map((store) => (
-            <a key={store.name} href="#" className="group relative overflow-hidden rounded-2xl border border-border bg-card transition-colors hover:border-primary/40">
+            <a
+              key={store.name}
+              href={store.url}
+              target="_blank"
+              rel="noreferrer"
+              className="group relative overflow-hidden rounded-2xl border border-border bg-card transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-lg"
+            >
               <div className="relative aspect-[16/10] overflow-hidden bg-muted">
-                <img src={store.image} alt={`${store.name} storefront preview`} loading="lazy" className="h-full w-full object-cover object-top transition-transform duration-500 group-hover:scale-[1.02]" />
+                <img
+                  src={store.image}
+                  alt={`${store.name} storefront preview`}
+                  loading="lazy"
+                  className="h-full w-full object-cover object-top transition-transform duration-500 group-hover:scale-[1.03]"
+                />
                 <div className="absolute inset-0 bg-gradient-to-t from-card/80 via-transparent to-transparent" />
-                <div className="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-background/70 px-2 py-0.5 font-mono text-[10px] text-foreground backdrop-blur">
-                  <span className="pulse-glow h-1.5 w-1.5 rounded-full bg-primary" />
-                  live
+
+                {/* Hover overlay: "See store" */}
+                <div className="absolute inset-0 flex items-center justify-center bg-background/50 opacity-0 backdrop-blur-sm transition-opacity duration-300 group-hover:opacity-100">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-background/90 px-4 py-2 font-mono text-xs font-medium text-foreground shadow-sm">
+                    See store
+                    <ArrowUpRight className="h-3.5 w-3.5" />
+                  </span>
                 </div>
               </div>
               <div className="p-5">

@@ -1,3 +1,4 @@
+//services/dashboard.service.ts
 import { Injectable } from '@nestjs/common'
 import { Prisma } from '@prisma/client'
 import { prisma } from '../../db'
@@ -16,6 +17,7 @@ Payments — Revenue, settlements, fees, webhook health.
 export class DashboardService {
   private statusCache?: CachedStatus
 
+  //Get an overview of key metrics for the dashboard
   async overview() {
     const now = Date.now()
     const since30d = new Date(now - 30 * 24 * 60 * 60 * 1000)
@@ -46,6 +48,7 @@ export class DashboardService {
     }
   }
 
+//Get a time series of GMV and order counts for the past N days
 async footprint() {
   const merchants = await prisma.merchantApplication.findMany({
     select: {
@@ -118,6 +121,7 @@ async footprint() {
   }
 }
 
+//Get a time series of GMV and order counts for the past N days
  async gmvSeries(days: number) {
   const start = this.startDate(days)
 
@@ -173,6 +177,7 @@ async footprint() {
   }))
 }
 
+//Get a time series of tenant events for the past N days
   async activitySeries(days: number) {
     const { start, buckets } = this.countBuckets(days)
     const events = await prisma.tenantEvent.groupBy({
@@ -187,6 +192,8 @@ async footprint() {
     return [...buckets.entries()].map(([date, count]) => ({ date, count }))
   }
 
+
+//Get a time series of merchant applications for the past N days
 async topMerchants(query: TopMerchantsQueryDto) {
   const since = query.days ? this.startDate(query.days) : undefined
 
@@ -254,6 +261,7 @@ if (groups.length === 0 && since) {
   }
 }
 
+//Get a time series of tenant events for the past N days
   async recentEvents(limit: number) {
     const events = await prisma.tenantEvent.findMany({
       take: limit,
@@ -281,6 +289,7 @@ if (groups.length === 0 && since) {
     }))
   }
 
+  //Get a time series of tenant events for the past N days
   async systemStatus() {
     if (this.statusCache && this.statusCache.expiresAt > Date.now()) return this.statusCache.value
     const [db, agentEvent, paymentEvent, storefront] = await Promise.all([
@@ -305,6 +314,7 @@ if (groups.length === 0 && since) {
     return value
   }
 
+//Get a time series of merchant applications for the past N days
   async recentMerchantApplications(limit: number) {
     const applications = await prisma.merchantApplication.findMany({
       take: limit,
@@ -325,6 +335,7 @@ if (groups.length === 0 && since) {
 
 
 
+//Helper functions for system status checks
   private async checkDb() {
     const started = Date.now()
     try {

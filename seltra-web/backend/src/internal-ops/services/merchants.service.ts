@@ -1,3 +1,4 @@
+//services/merchants.service.ts
 import { Injectable, NotFoundException, PayloadTooLargeException } from '@nestjs/common'
 import { Prisma } from '@prisma/client'
 import { prisma } from '../../db'
@@ -12,6 +13,8 @@ type TenantWithOwner = Prisma.TenantGetPayload<{
 
 @Injectable()
 export class MerchantsService {
+
+  //List merchants with optional filtering, sorting, and pagination
   async list(query: MerchantsQueryDto) {
     const rows = await this.filteredRows(query)
     const sorted = this.sortRows(rows, query)
@@ -27,6 +30,7 @@ export class MerchantsService {
     }
   }
 
+//Get merchant details by tenant ID
   async detail(tenantId: string) {
     const tenant = await prisma.tenant.findUnique({
       where: { id: tenantId },
@@ -59,6 +63,7 @@ export class MerchantsService {
     }
   }
 
+//Update merchant details by tenant ID
 async update(tenantId: string, body: MerchantPatchDto) {
   const tenant = await prisma.tenant.findUnique({
     where: { id: tenantId },
@@ -101,6 +106,7 @@ async update(tenantId: string, body: MerchantPatchDto) {
   return this.detail(tenantId)
 }
 
+//Remove a merchant by tenant ID (soft delete)
   async remove(tenantId: string) {
     const existing = await prisma.tenant.findUnique({ where: { id: tenantId }, select: { id: true } })
     if (!existing) throw new NotFoundException('Tenant not found')
@@ -108,6 +114,7 @@ async update(tenantId: string, body: MerchantPatchDto) {
     return { tenantId: tenant.id, status: tenant.status }
   }
 
+//Export merchants as CSV with optional filtering and sorting
   async exportCsv(query: MerchantsQueryDto) {
     const rows = this.sortRows(await this.filteredRows(query), query)
     if (rows.length > 5000) throw new PayloadTooLargeException('Export is capped at 5,000 rows. Narrow your filters.')
