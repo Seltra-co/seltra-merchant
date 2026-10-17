@@ -1,4 +1,4 @@
-//apps/api/src/main.ts
+//seltra-web/backend/src/main.ts
 import { NestFactory } from '@nestjs/core'
 import { Logger, RequestMethod } from '@nestjs/common'
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger'
@@ -17,13 +17,28 @@ async function bootstrap() {
   // Static allowlist for known non-tenant origins (marketing site, admin dashboard, local dev)
   const STATIC_ALLOWED_ORIGINS = new Set([
     'http://localhost:3000',
+    'http://localhost:5173',
+    'http://localhost:8080',
+    'http://127.0.0.1:3000',
+    'http://127.0.0.1:5173',
+    'http://127.0.0.1:8080',
     'https://seltra.co',
     'https://www.seltra.co',
     'https://seltra-merchant.vercel.app',
+    'https://seltra-v5-merchant.vercel.app',
   ])
 
   // Matches any merchant storefront subdomain, e.g. https://glow-luxe-skincare.seltra.co
   const TENANT_SUBDOMAIN_REGEX = /^https:\/\/[a-z0-9-]+\.seltra\.co$/
+  // Ops dashboard previews (Vercel / Lovable)
+  const OPS_ORIGIN_REGEX =
+    /^https:\/\/([a-z0-9-]+\.)*(seltra-ops|seltra-ops-platform)([a-z0-9-]*)?\.(vercel\.app|lovable\.app)$/i
+  // Local/LAN Next.js (http://192.168.x.x:3000) — needed when testing from Network URL
+  const LOCAL_LAN_ORIGIN_REGEX =
+    /^http:\/\/(localhost|127\.0\.0\.1|10(?:\.\d{1,3}){3}|192\.168(?:\.\d{1,3}){2}|172\.(?:1[6-9]|2\d|3[0-1])(?:\.\d{1,3}){2}):(3000|3001|5173|8080)$/i
+  // Merchant marketing / app Vercel previews
+  const MERCHANT_VERCEL_ORIGIN_REGEX =
+    /^https:\/\/([a-z0-9-]+\.)*(seltra|seltra-merchant|seltra-v5|seltra-v5-merchant)([a-z0-9-]*)?\.vercel\.app$/i
 
   app.enableCors({
     origin: (origin, callback) => {
@@ -31,7 +46,11 @@ async function bootstrap() {
       if (!origin) return callback(null, true)
 
       const isAllowed =
-        STATIC_ALLOWED_ORIGINS.has(origin) || TENANT_SUBDOMAIN_REGEX.test(origin)
+        STATIC_ALLOWED_ORIGINS.has(origin) ||
+        TENANT_SUBDOMAIN_REGEX.test(origin) ||
+        OPS_ORIGIN_REGEX.test(origin) ||
+        LOCAL_LAN_ORIGIN_REGEX.test(origin) ||
+        MERCHANT_VERCEL_ORIGIN_REGEX.test(origin)
 
       if (isAllowed) {
         return callback(null, true)
