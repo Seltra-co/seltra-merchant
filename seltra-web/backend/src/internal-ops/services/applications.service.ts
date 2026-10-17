@@ -217,6 +217,7 @@ export class ApplicationsService {
       where: { id },
       data: {
         status: MerchantStatus.pending,
+        createdAt: new Date(),
         reviewNotes: null,
         reviewedAt: null,
         merchantId: null,

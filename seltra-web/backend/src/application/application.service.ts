@@ -27,6 +27,7 @@ export class ApplicationService {
           data: {
             ...data,
             status: 'pending',
+            createdAt: new Date(),
             reviewNotes: null,
             reviewedAt: null,
             merchantId: null,
